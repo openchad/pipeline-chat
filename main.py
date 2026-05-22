@@ -1,7 +1,7 @@
 from openchadpy.tool_base import ToolRegistry
 from openchadpy.pipeline_base import PipelineBase
 import asyncio
-from parser import Parser
+from .parser import Parser
 from typing import Any, Dict, List, Optional, Tuple
 import hashlib
 import logging
