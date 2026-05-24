@@ -1070,7 +1070,7 @@ class Chat(PipelineBase):
                     f"{json.dumps(self.r)}"
                             )
                 try:
-                    res = await self.llm_tool(query, "update_title", tool_registry={"update_title": update_title})
+                    res = await self.llm_tool(query, tool_registry={"update_title": update_title})
                     logger.info(f"[{self.__class__.__name__}] Title: {json.dumps(res)}")
                 except Exception as e:
                     logger.error(f"[{self.__class__.__name__}] Error calling LLM: {str(e)}")
