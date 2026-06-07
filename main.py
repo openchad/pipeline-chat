@@ -193,6 +193,16 @@ class Chat(PipelineBase):
         return (
             f'<ToolCall id="{tc_id}" name="{_escape_xml_attr(name)}"/>'
         )
+    def _split_lang_code(self, buf: str):
+        """Extract (lang, code) from a code_buffer whose first line is the language tag.
+        The parser now stores the language as the first line of code_buffer."""
+        first_nl = buf.find("\n")
+        if first_nl != -1:
+            first_line = buf[:first_nl].strip()
+            if re.match(r"^[a-zA-Z0-9_+\-]+$", first_line):
+                return first_line, buf[first_nl + 1:]
+        return "", buf
+
     def _render_code_block_tag(self, cb_id: str, lang: str, code: str) -> str:
         """code_block wrapper  always closed even for in-progress content."""
         lang_tag = lang or ""
@@ -249,7 +259,9 @@ class Chat(PipelineBase):
             parts.append(self._pending_text)
         if is_parsing_code and current_code_buf:
             cb_id = f"cb_{self._code_block_counter}"  # peek, don't increment
-            parts.append(self._render_code_block_tag(cb_id, code_lang, current_code_buf))
+            _lang, _code = self._split_lang_code(current_code_buf)
+            parts.append(self._render_code_block_tag(cb_id, _lang, _code))
+
         if is_parsing_tool:
             parts.append('<ToolCall id="pending" name="" parameters=""/>')
         # Show placeholders so the UI knows tool calls are coming, even
@@ -526,6 +538,8 @@ class Chat(PipelineBase):
                     "responses": [],
                     "response_branch": 0,
                 }
+            else:
+                self.r["content"][self.branch_id]["query"] = self.query
         except Exception as e:
             raise RuntimeError(
                 f"[setup] STEP 3 - branch_id init failed | content type={type(self.r['content'])} content value={self.r['content']!r}: {e}"
@@ -780,12 +794,13 @@ class Chat(PipelineBase):
         if self.parser.in_code_block and self.parser.code_buffer:
             cb_id = self._next_code_id()
             self._flush_pending_text()
+            _lang, _code = self._split_lang_code(self.parser.code_buffer)
             self._content_segments.append(
                 {
                     "type": "code_block",
                     "id": cb_id,
-                    "lang": "",
-                    "code": self.parser.code_buffer,
+                    "lang": _lang,
+                    "code": _code,
                 }
             )
         # Flush remaining pending text

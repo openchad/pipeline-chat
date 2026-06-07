@@ -318,13 +318,15 @@ class Parser:
                     elif space_idx != -1: match_end = space_idx
                     else: match_end = len(self.buffer)
                     # Skip the ```marker and optional language tag
+                    # Preserve lang tag as first line of code_buffer so callers can recover it
+                    lang_tag = self.buffer[code_idx + 3 : match_end].strip()
                     start_pos = match_end
                     if start_pos < len(self.buffer) and self.buffer[start_pos] == '\n':
                         start_pos += 1
                     self.buffer = self.buffer[start_pos:]
                     self.in_code_block = True
                     self.code_block_depth = 0
-                    self.code_buffer = ""
+                    self.code_buffer = (lang_tag + "\n") if lang_tag else ""
                     continue
                 if found_pattern:
                     assert match_obj is not None
